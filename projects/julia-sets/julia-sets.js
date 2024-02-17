@@ -109,6 +109,7 @@ const sketch = (p) => {
    p.setup = () => {
       wrapper = document.getElementById("p5Wrapper");
       cnv = p.createCanvas(wrapper.offsetWidth, wrapper.offsetWidth, p.WEBGL);
+      cnv.style("touch-action", "none");
       p.pixelDensity(1);
 
       sh = p.createShader(vs, fs());
