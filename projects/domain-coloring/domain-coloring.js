@@ -116,6 +116,7 @@ const sketch = (p) => {
       button.position(inp.width + inp.x, p.height + 10, "static");
 
       cnv.mouseWheel((event) => {
+         event.preventDefault();
          if (event.deltaY < 0) {
             zoomFactor *= 0.9;
          } else if (event.deltaY > 0) {
