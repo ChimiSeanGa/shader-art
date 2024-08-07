@@ -1,4 +1,5 @@
 import { glslComplex } from "../../util/glsl-complex";
+import { pi } from "mathjs";
 
 const sketch = (p) => {
    let funStr = "z";
@@ -9,6 +10,15 @@ const sketch = (p) => {
    let wrapper = null;
 
    let sh = null;
+   let cnv = null;
+
+   let uTheta1 = 2*pi/3;
+   let uTheta1Speed = 1.0;
+   let uDelta = 0.005;
+   let uRad = 1.0;
+   let uRadSpeed = 0.0;
+   let uColorOffset = 0;
+   let uColorSpeed = 0;
 
    let vs = `
       precision highp float;
@@ -32,6 +42,15 @@ const sketch = (p) => {
       uniform vec2 uResolution;
       uniform float uTime;
       
+      // Visual control panel
+      uniform float uTheta1;
+      uniform float uTheta1Speed;
+      uniform float uDelta;
+      uniform float uRad;
+      uniform float uRadSpeed;
+      uniform float uColorOffset;
+      uniform float uColorSpeed;
+      
       #define PI 3.14159265359
       #define E 2.718281828
       #define ITERS 150
@@ -39,16 +58,15 @@ const sketch = (p) => {
       
       ${glslComplex}
 
-      float theta1 = 2.0*PI/3.0 + uTime/10.0*PI;
+      float theta1 = uTheta1 + uTime/20.0*PI*uTheta1Speed;
       // float theta1 = 5.0*PI/3.0;
 
       float theta2 = -3.0*PI/7.0;
-      // float theta2 = -PI/7.0 + uTime/40.0*PI;
 
-      float rad = 2.0;
-      // float rad = (sin(uTime/2.0*PI - PI*0.5)+1.0)*1.5/2.0 + 0.5;
+      // float rad = 2.0;
+      float rad = (sin((uTime/2.0*PI - PI*0.5)*uRadSpeed)+1.0)*1.5/2.0 + uRad;
 
-      float delta = 0.01;
+      float delta = uDelta;
 
       vec3 rgb2hsv(vec3 c) {
          vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
@@ -126,7 +144,8 @@ const sketch = (p) => {
             int b = is_near_atom_boundary(w);
             if (b >= 0) {
                float bf = float(b);
-               return hsv2rgb(vec3(bf/8.0 + 0.65,1.0,1.0));
+               float nf = float(n);
+               return hsv2rgb(vec3(bf/10.0*nf + uColorOffset + uColorSpeed*uTime/20.0,1.0,1.0));
             }
             w = transform(w);
          }
@@ -166,16 +185,52 @@ const sketch = (p) => {
 
    p.setup = () => {
       wrapper = document.getElementById("p5Wrapper");
-      p.createCanvas(wrapper.offsetWidth, wrapper.offsetWidth, p.WEBGL);
+      document.getElementsByTagName('body')[0].style.backgroundColor = 'BLACK';
+      cnv = p.createCanvas(wrapper.offsetWidth, wrapper.offsetWidth, p.WEBGL);
       p.pixelDensity(1);
       p.frameRate(60);
 
       sh = p.createShader(vs, fs());
+      console.log(checkShaderError(sh, fs()));
       p.shader(sh);
       p.noStroke();
 
       sh.setUniform("uResolution", [p.width, p.height]);
       sh.setUniform("uTime", 0);
+
+      sh.setUniform("uTheta1", uTheta1);
+      sh.setUniform("uTheta1Speed", uTheta1Speed);
+      sh.setUniform("uDelta", uDelta);
+      sh.setUniform("uRad", uRad);
+      sh.setUniform("uRadSpeed", uRadSpeed);
+      sh.setUniform("uColorOffset", uColorOffset);
+      sh.setUniform("uColorSpeed", uColorSpeed);
+
+      window.addEventListener("keydown", (event) => {
+         if (event.key === "a") {
+            uRad -= 0.01;
+         } else if (event.key === "d") {
+            uRad += 0.01;
+         } else if (event.key === "w") {
+            uTheta1Speed += 0.001;
+         } else if (event.key === "s") {
+            uTheta1Speed -= 0.001;
+         } else if (event.key === "z") {
+            uTheta1 -= 0.01;
+         } else if (event.key === "x") {
+            uTheta1 += 0.01;
+         } else if (event.key === "n") {
+            uDelta -= 0.001;
+         } else if (event.key === "m") {
+            uDelta += 0.001;
+         } else if (event.key === "b") {
+            uColorOffset = (uColorOffset + 0.01) % 1;
+         } else if (event.key === "v") {
+            uColorSpeed = 30.0;
+         } else if (event.key === "c") {
+            uColorSpeed -= 0.0;
+         }
+      });
 
       // inp = p.createInput("z");
       // inp.position(p.width/2.0 + inp.width/2.0, p.height + 10, "static");
@@ -206,6 +261,15 @@ const sketch = (p) => {
    p.draw = () => {
       sh.setUniform("uResolution", [p.width, p.height]);
       sh.setUniform("uTime", p.frameCount*0.004);
+
+      sh.setUniform("uTheta1", uTheta1);
+      sh.setUniform("uTheta1Speed", uTheta1Speed);
+      sh.setUniform("uDelta", uDelta);
+      sh.setUniform("uRad", uRad);
+      sh.setUniform("uRadSpeed", uRadSpeed);
+      sh.setUniform("uColorOffset", uColorOffset);
+      sh.setUniform("uColorSpeed", uColorSpeed);
+
       p.plane(p.width, p.height);
    };
 };
